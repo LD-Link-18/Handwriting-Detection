@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Handwriting & Font Recognizer</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-dark: #090d16;
+            --bg-glass: rgba(17, 24, 39, 0.7);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --primary: #6366f1; /* Indigo */
+            --primary-glow: rgba(99, 102, 241, 0.15);
+            --secondary: #a855f7; /* Purple */
+            --accent: #06b6d4; /* Cyan */
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --card-radius: 20px;
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(135deg, #090d16 0%, #0d1527 50%, #1e112c 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        header {
+            padding: 24px 5%;
+            background: rgba(9, 13, 22, 0.5);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-glass);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 22px;
+            font-weight: 800;
+            background: linear-gradient(to right, #6366f1, #a855f7, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo i {
+            -webkit-text-fill-color: #6366f1;
+            text-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 90%;
+            margin: 40px auto;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .hero h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 42px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            background: linear-gradient(to right, #ffffff, #d8b4fe, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            color: var(--text-muted);
+            font-size: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Tabs Section */
+        .mode-selector {
+            background: var(--bg-glass);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass);
+            border-radius: 100px;
+            padding: 6px;
+            display: flex;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .mode-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 12px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 100px;
+            transition: all var(--transition-speed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .mode-btn:hover:not(.active) {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        /* Upload & Capture Grid */
+        .workspace-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+        }
+
+        @media (max-width: 900px) {
+            .workspace-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .glass-card {
+            background: var(--bg-glass);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--card-radius);
+            padding: 32px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            opacity: 0.8;
+        }
+
+        .card-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title i {
+            color: var(--primary);
+        }
+
+        /* Drag and Drop Zone */
+        .upload-zone {
+            border: 2px dashed rgba(99, 102, 241, 0.3);
+            border-radius: 16px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            background: rgba(255, 255, 255, 0.01);
+            position: relative;
+        }
+
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--primary);
+            background: var(--primary-glow);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.1) inset;
+        }
+
+        .upload-zone i {
+            font-size: 40px;
+            color: var(--primary);
+            margin-bottom: 16px;
+            transition: transform var(--transition-speed);
+        }
+
+        .upload-zone:hover i {
+            transform: translateY(-5px);
+        }
+
+        .upload-zone h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .upload-zone p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        /* Camera Capture Section */
+        .camera-actions {
+            margin-top: 16px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-glass);
+            color: var(--text-main);
+            padding: 12px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all var(--transition-speed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--text-muted);
+        }
+
+        .btn-primary {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            border: none;
+            color: white;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+            filter: brightness(1.1);
+        }
+
+        .btn-primary:disabled {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-accent {
+            background: var(--accent);
+            border: none;
+            color: white;
+        }
+
+        /* Camera View Finder */
+        .camera-box {
+            position: relative;
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            background: black;
+            border: 1px solid var(--border-glass);
+            margin-top: 16px;
+            display: none;
+        }
+
+        .camera-box video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .camera-overlay {
+            position: absolute;
+            top: 50%;
+            left: 5%;
+            width: 90%;
+            height: 60px;
+            margin-top: -30px;
+            border: 2px dashed rgba(255, 255, 255, 0.6);
+            border-radius: 8px;
+            pointer-events: none;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .camera-overlay::after {
+            content: 'Align handwriting text line here';
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+
+        /* Examples Gallery */
+        .gallery-container {
+            margin-top: 24px;
+        }
+
+        .gallery-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+        }
+
+        @media (max-width: 600px) {
+            .gallery-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .gallery-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-glass);
+            border-radius: 10px;
+            padding: 8px;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            text-align: center;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 40px;
+            object-fit: contain;
+            border-radius: 4px;
+            background: white;
+            filter: contrast(1.1);
+        }
+
+        .gallery-item span {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+        }
+
+        .gallery-item:hover, .gallery-item.active {
+            border-color: var(--primary);
+            background: var(--primary-glow);
+        }
+
+        /* Preview Area */
+        .preview-box {
+            margin-top: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-glass);
+            background: rgba(0, 0, 0, 0.2);
+            padding: 16px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+            border-radius: 8px;
+            background: white;
+            padding: 8px;
+        }
+
+        /* Results Display Card */
+        .results-card {
+            display: none;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .result-section {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-glass);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .result-section-header {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid var(--border-glass);
+            padding-bottom: 12px;
+        }
+
+        .ocr-outputs {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .ocr-box {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-glass);
+            border-radius: 12px;
+            padding: 16px;
+            position: relative;
+        }
+
+        .ocr-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+
+        .ocr-text {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-main);
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .ocr-text.corrected {
+            color: #38bdf8;
+            font-weight: 600;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color var(--transition-speed);
+        }
+
+        .copy-btn:hover {
+            color: white;
+        }
+
+        /* Font Output Styling */
+        .font-summary {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .font-badge {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: white;
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+        }
+
+        .font-details h3 {
+            font-size: 20px;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            margin-bottom: 4px;
+        }
+
+        .font-details p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .warning-card {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .warning-card i {
+            color: #ef4444;
+            font-size: 18px;
+            margin-top: 2px;
+        }
+
+        .warning-card div h4 {
+            color: #f87171;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .warning-card div p {
+            color: rgba(248, 113, 113, 0.8);
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        /* Chart/Bars list */
+        .chart-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .chart-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .chart-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .chart-val {
+            color: var(--text-muted);
+        }
+
+        .chart-bar-bg {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .chart-bar-fill {
+            height: 100%;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            border-radius: 4px;
+            width: 0%;
+            transition: width 1s ease-out;
+        }
+
+        .chart-item.winner .chart-bar-fill {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+        }
+
+        /* Loading States */
+        .loader-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(9, 13, 22, 0.85);
+            backdrop-filter: blur(12px);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-steps {
+            text-align: center;
+        }
+
+        .loading-steps p {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 6px;
+        }
+
+        .loading-steps span {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        footer {
+            padding: 32px 5%;
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-glass);
+            margin-top: auto;
+            background: rgba(9, 13, 22, 0.6);
+        }
+
+        footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <i class="fa-solid fa-signature"></i>
+            <span>ScribbleMind</span>
+        </div>
+        <div class="logo-subtitle" style="font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase;">
+            Kocaeli University AI
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="hero">
+            <h1>OCR & Font Identification</h1>
+            <p>Upload a line of handwritten text to digitize the letters and recognize the writer's font style in real-time.</p>
+        </div>
+
+        <!-- Mode Selector -->
+        <div class="mode-selector">
+            <button class="mode-btn active" onclick="setMode('all')" id="btn-mode-all">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> All-In-One
+            </button>
+            <button class="mode-btn" onclick="setMode('text')" id="btn-mode-text">
+                <i class="fa-solid fa-font"></i> Read Text
+            </button>
+            <button class="mode-btn" onclick="setMode('font')" id="btn-mode-font">
+                <i class="fa-solid fa-feather-pointed"></i> Detect Font
+            </button>
+        </div>
+
+        <!-- Error Banner -->
+        <div id="error-banner" style="display:none; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 16px 20px; color: #fca5a5; font-size: 14px; font-weight: 600; align-items: center; gap: 12px; box-shadow: 0 4px 20px rgba(239, 68, 68, 0.1);">
+            <i class="fa-solid fa-circle-exclamation" style="color: #ef4444; font-size: 18px;"></i>
+            <span style="flex-grow: 1;" id="error-message">Error message goes here</span>
+            <button onclick="dismissError()" style="background: transparent; border: none; color: #fca5a5; cursor: pointer; font-size: 16px; padding: 0 4px;"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div class="workspace-grid">
+            <!-- Left Side: Input -->
+            <div class="glass-card" id="input-card">
+                <div class="loader-overlay" id="loading-overlay">
+                    <div class="spinner"></div>
+                    <div class="loading-steps">
+                        <p id="loader-title">Analyzing Image</p>
+                        <span id="loader-subtitle">Running neural network inference...</span>
+                    </div>
+                </div>
+
+                <!-- Text OCR Mode Toggle -->
+                <div id="ocr-type-container" style="display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-glass); border-radius: 12px; padding: 10px 16px; margin-bottom: 20px;">
+                    <span style="font-size: 13px; font-weight: 700; color: var(--text-muted);">
+                        <i class="fa-solid fa-arrows-left-right" style="margin-right: 6px; color: var(--primary);"></i> OCR Mode
+                    </span>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-sm" id="btn-text-line" onclick="setTextType('line')" style="padding: 6px 12px; font-size: 11px; border-radius: 8px; font-weight: 700; background: var(--primary); color: white; border: none; cursor: pointer;">Sentence Line</button>
+                        <button class="btn btn-sm" id="btn-text-word" onclick="setTextType('word')" style="padding: 6px 12px; font-size: 11px; border-radius: 8px; font-weight: 700; background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); color: var(--text-muted); cursor: pointer;">Single Word</button>
+                    </div>
+                </div>
+
+                <!-- Drag & Drop Zone -->
+                <div class="upload-zone" id="drop-zone" onclick="triggerFileInput()">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <h3>Drag & drop your image here</h3>
+                    <p>Supports PNG, JPG, JPEG (Ideal: a single cropped line of text)</p>
+                    <input type="file" id="file-input" class="file-input" accept="image/*" onchange="handleFileSelect(event)">
+                </div>
+
+                <!-- Camera Container -->
+                <div class="camera-box" id="camera-box">
+                    <video id="video-stream" autoplay playsinline></video>
+                    <div class="camera-overlay"></div>
+                </div>
+
+                <!-- Action buttons -->
+                <div class="camera-actions">
+                    <button class="btn" id="camera-toggle-btn" onclick="toggleCamera()">
+                        <i class="fa-solid fa-camera"></i> Use Camera
+                    </button>
+                    <button class="btn btn-accent" id="snap-btn" onclick="captureSnapshot()" style="display:none;">
+                        <i class="fa-solid fa-circle"></i> Snap Photo
+                    </button>
+                </div>
+
+                <!-- Image Preview Box -->
+                <div class="preview-box" id="preview-box">
+                    <div class="gallery-title">
+                        <i class="fa-solid fa-image"></i> Image Preview
+                    </div>
+                    <img class="preview-image" id="preview-img" src="" alt="Preview">
+                    <button class="btn btn-primary" id="analyze-btn" onclick="submitAnalysis()" disabled>
+                        <i class="fa-solid fa-bolt"></i> Run Intelligence
+                    </button>
+                </div>
+
+                <!-- Example Gallery -->
+                <div class="gallery-container">
+                    <div class="gallery-title">
+                        <i class="fa-solid fa-box-open"></i> Preset Examples (Click to test)
+                    </div>
+                    <div class="gallery-grid">
+                        <div class="gallery-item" onclick="selectPreset('caveat', this)">
+                            <img src="/static/example_caveat.png" alt="Caveat">
+                            <span>Caveat</span>
+                        </div>
+                        <div class="gallery-item" onclick="selectPreset('courier', this)">
+                            <img src="/static/example_courier.png" alt="Courier">
+                            <span>Courier</span>
+                        </div>
+                        <div class="gallery-item" onclick="selectPreset('lobster', this)">
+                            <img src="/static/example_lobster.png" alt="Lobster">
+                            <span>Lobster</span>
+                        </div>
+                        <div class="gallery-item" onclick="selectPreset('merriweather', this)">
+                            <img src="/static/example_merriweather.png" alt="Merriweather">
+                            <span>Merriweather</span>
+                        </div>
+                        <div class="gallery-item" onclick="selectPreset('roboto', this)">
+                            <img src="/static/example_roboto.png" alt="Roboto">
+                            <span>Roboto</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Results -->
+            <div class="glass-card" style="min-height: 400px; justify-content: center;">
+                <div class="card-title">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Analysis Results</span>
+                </div>
+
+                <!-- Empty State -->
+                <div id="results-empty" style="text-align: center; color: var(--text-muted); padding: 40px 0;">
+                    <i class="fa-solid fa-circle-question" style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;"></i>
+                    <p style="font-size: 15px; font-weight: 500;">No image analyzed yet</p>
+                    <p style="font-size: 13px; margin-top: 4px;">Upload or capture an image to see neural network results.</p>
+                </div>
+
+                <!-- Active Results Card -->
+                <div class="results-card" id="results-card">
+                    
+                    <!-- OCR Segment -->
+                    <div class="result-section" id="result-section-text" style="display:none;">
+                        <div class="result-section-header">
+                            <i class="fa-solid fa-font"></i> Handwriting Readout (OCR)
+                        </div>
+                        <div class="ocr-outputs">
+                            <div class="ocr-box">
+                                <div class="ocr-label">Raw Neural Output</div>
+                                <div class="ocr-text" id="ocr-raw">...</div>
+                                <button class="copy-btn" onclick="copyText('ocr-raw')" title="Copy text">
+                                    <i class="fa-regular fa-copy"></i>
+                                </button>
+                            </div>
+                            <div class="ocr-box">
+                                <div class="ocr-label">AI Spell-Corrected</div>
+                                <div class="ocr-text corrected" id="ocr-corrected">...</div>
+                                <button class="copy-btn" onclick="copyText('ocr-corrected')" title="Copy text">
+                                    <i class="fa-regular fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Font Identification Segment -->
+                    <div class="result-section" id="result-section-font" style="display:none;">
+                        <div class="result-section-header">
+                            <i class="fa-solid fa-feather-pointed"></i> Font & Writer Style
+                        </div>
+                        
+                        <!-- Foreign Writer Warning -->
+                        <div class="warning-card" id="writer-warning" style="display:none;">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <div>
+                                <h4>Unregistered Writer Detected</h4>
+                                <p id="warning-msg">Bu yazar bizim yazarlarımızdan değil (Unknown Writer)</p>
+                            </div>
+                        </div>
+
+                        <div class="font-summary">
+                            <div class="font-badge">
+                                <i class="fa-solid fa-signature"></i>
+                            </div>
+                            <div class="font-details">
+                                <h3 id="predicted-writer">yazar1</h3>
+                                <p id="predicted-font-name">Font: CourierPrime-Italic</p>
+                                <p id="predicted-confidence">Match Confidence: 0.0%</p>
+                            </div>
+                        </div>
+
+                        <!-- Progress Bars -->
+                        <div class="chart-list" id="confidence-bars">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>ScribbleMind &copy; 2026. Built for Handwriting Analysis and Font Identification.</p>
+    </footer>
+
+    <script>
+        let currentMode = 'all'; // 'all', 'text', 'font'
+        let selectedFile = null;
+        let videoStream = null;
+
+        // Drag and Drop implementation
+        const dropZone = document.getElementById('drop-zone');
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+            }, false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) {
+                setFile(files[0]);
+                clearActivePreset();
+            }
+        });
+
+        function triggerFileInput() {
+            document.getElementById('file-input').click();
+        }
+
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                setFile(files[0]);
+                clearActivePreset();
+            }
+        }
+
+        function setFile(file) {
+            selectedFile = file;
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('preview-img').src = e.target.result;
+                    document.getElementById('preview-box').style.display = 'flex';
+                    document.getElementById('analyze-btn').disabled = false;
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function clearActivePreset() {
+            document.querySelectorAll('.gallery-item').forEach(item => {
+                item.classList.remove('active');
+            });
+        }
+
+        // Preset Selections
+        function selectPreset(presetName, element) {
+            clearActivePreset();
+            element.classList.add('active');
+            
+            // Stop camera if running
+            stopCamera();
+
+            // Fetch preset image and convert to file blob
+            const imgUrl = `/static/example_${presetName}.png`;
+            fetch(imgUrl)
+                .then(res => res.blob())
+                .then(blob => {
+                    const file = new File([blob], `example_${presetName}.png`, { type: 'image/png' });
+                    setFile(file);
+                })
+                .catch(err => {
+                    console.error("Error fetching preset image:", err);
+                    alert("Could not load preset image.");
+                });
+        }
+
+        // Camera Captures
+        async function toggleCamera() {
+            const video = document.getElementById('video-stream');
+            const cameraBox = document.getElementById('camera-box');
+            const toggleBtn = document.getElementById('camera-toggle-btn');
+            const snapBtn = document.getElementById('snap-btn');
+
+            if (videoStream) {
+                stopCamera();
+            } else {
+                try {
+                    videoStream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: 'environment' }, // prefer rear camera on mobile
+                        audio: false
+                    });
+                    video.srcObject = videoStream;
+                    cameraBox.style.display = 'block';
+                    snapBtn.style.display = 'inline-flex';
+                    toggleBtn.innerHTML = '<i class="fa-solid fa-video-slash"></i> Stop Camera';
+                    clearActivePreset();
+                } catch (err) {
+                    console.error("Camera access error:", err);
+                    alert("Unable to access camera. Please check permissions or drag and drop an image.");
+                }
+            }
+        }
+
+        function stopCamera() {
+            const video = document.getElementById('video-stream');
+            const cameraBox = document.getElementById('camera-box');
+            const toggleBtn = document.getElementById('camera-toggle-btn');
+            const snapBtn = document.getElementById('snap-btn');
+
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            video.srcObject = null;
+            cameraBox.style.display = 'none';
+            snapBtn.style.display = 'none';
+            toggleBtn.innerHTML = '<i class="fa-solid fa-camera"></i> Use Camera';
+        }
+
+        function captureSnapshot() {
+            const video = document.getElementById('video-stream');
+            
+            // Create target canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            canvas.toBlob((blob) => {
+                const file = new File([blob], "camera_snapshot.jpg", { type: 'image/jpeg' });
+                setFile(file);
+                stopCamera();
+            }, 'image/jpeg');
+        }
+
+        let selectedTextType = 'line';
+
+        function setTextType(type) {
+            selectedTextType = type;
+            const btnLine = document.getElementById('btn-text-line');
+            const btnWord = document.getElementById('btn-text-word');
+            
+            if (type === 'line') {
+                btnLine.style.background = 'var(--primary)';
+                btnLine.style.color = 'white';
+                btnLine.style.border = 'none';
+                
+                btnWord.style.background = 'rgba(255,255,255,0.03)';
+                btnWord.style.color = 'var(--text-muted)';
+                btnWord.style.border = '1px solid var(--border-glass)';
+            } else {
+                btnWord.style.background = 'var(--primary)';
+                btnWord.style.color = 'white';
+                btnWord.style.border = 'none';
+                
+                btnLine.style.background = 'rgba(255,255,255,0.03)';
+                btnLine.style.color = 'var(--text-muted)';
+                btnLine.style.border = '1px solid var(--border-glass)';
+            }
+        }
+
+        // Mode Switching
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            if (mode === 'all') document.getElementById('btn-mode-all').classList.add('active');
+            if (mode === 'text') document.getElementById('btn-mode-text').classList.add('active');
+            if (mode === 'font') document.getElementById('btn-mode-font').classList.add('active');
+
+            // Hide HTR type selector if we only analyze fonts
+            const ocrTypeContainer = document.getElementById('ocr-type-container');
+            if (mode === 'font') {
+                ocrTypeContainer.style.display = 'none';
+            } else {
+                ocrTypeContainer.style.display = 'flex';
+            }
+        }
+
+        function showError(msg) {
+            const banner = document.getElementById('error-banner');
+            const txt = document.getElementById('error-message');
+            txt.textContent = msg;
+            banner.style.display = 'flex';
+            // Scroll to banner on mobile
+            banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function dismissError() {
+            document.getElementById('error-banner').style.display = 'none';
+        }
+
+        // Server communication
+        async function submitAnalysis() {
+            if (!selectedFile) return;
+
+            dismissError();
+
+            const overlay = document.getElementById('loading-overlay');
+            const resultsCard = document.getElementById('results-card');
+            const emptyState = document.getElementById('results-empty');
+            
+            const loaderTitle = document.getElementById('loader-title');
+            const loaderSubtitle = document.getElementById('loader-subtitle');
+
+            // Setup loading state with dynamic mode descriptions
+            if (currentMode === 'text') {
+                loaderTitle.textContent = "Digitizing Writing";
+                loaderSubtitle.textContent = "Running CRNN OCR & Beam Search decoding...";
+            } else if (currentMode === 'font') {
+                loaderTitle.textContent = "Analyzing Font Style";
+                loaderSubtitle.textContent = "Running ResNet-50 feature extraction...";
+            } else {
+                loaderTitle.textContent = "Dual Neural Processing";
+                loaderSubtitle.textContent = "Running CRNN OCR & ResNet-50 Font Identification...";
+            }
+            overlay.style.display = 'flex';
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('text_type', selectedTextType);
+
+            let endpoint = '/api/predict-all';
+            if (currentMode === 'text') endpoint = '/api/predict-text';
+            if (currentMode === 'font') endpoint = '/api/predict-font';
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.detail || "Server failed to process image.");
+                }
+
+                const result = await response.json();
+                
+                // Hide empty state and show results
+                emptyState.style.display = 'none';
+                resultsCard.style.display = 'flex';
+                
+                // Reset outputs
+                document.getElementById('result-section-text').style.display = 'none';
+                document.getElementById('result-section-font').style.display = 'none';
+
+                if (currentMode === 'text') {
+                    renderTextResult(result);
+                } else if (currentMode === 'font') {
+                    renderFontResult(result);
+                } else {
+                    // All in one
+                    renderTextResult(result.text_recognition);
+                    renderFontResult(result.font_recognition);
+                }
+
+            } catch (err) {
+                console.error("Analysis failed:", err);
+                showError("Analysis failed: " + err.message);
+            } finally {
+                overlay.style.display = 'none';
+            }
+        }
+
+        function renderTextResult(data) {
+            const section = document.getElementById('result-section-text');
+            if (!data || !data.success) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            document.getElementById('ocr-raw').textContent = data.raw_text || "No text read";
+            document.getElementById('ocr-corrected').textContent = data.corrected_text || "No text read";
+        }
+
+        function renderFontResult(data) {
+            const section = document.getElementById('result-section-font');
+            if (!data || !data.success) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            
+            // Set Predicted Title details
+            document.getElementById('predicted-writer').textContent = data.writer_display;
+            document.getElementById('predicted-font-name').textContent = "Font style: " + data.predicted_font;
+            document.getElementById('predicted-confidence').textContent = "Match Confidence: " + (data.confidence * 100).toFixed(1) + "%";
+
+            // Warning for foreign writer
+            const warningCard = document.getElementById('writer-warning');
+            if (data.predicted_font === "Caveat-VariableFont_wght") {
+                warningCard.style.display = 'flex';
+            } else {
+                warningCard.style.display = 'none';
+            }
+
+            // Render confidence scores chart
+            const barsList = document.getElementById('confidence-bars');
+            barsList.innerHTML = '';
+
+            data.scores.forEach((score, idx) => {
+                const isWinner = idx === 0;
+                const percentage = (score.probability * 100).toFixed(1);
+                
+                const item = document.createElement('div');
+                item.className = `chart-item ${isWinner ? 'winner' : ''}`;
+                item.innerHTML = `
+                    <div class="chart-labels">
+                        <span>${score.writer_display}</span>
+                        <span class="chart-val">${percentage}%</span>
+                    </div>
+                    <div class="chart-bar-bg">
+                        <div class="chart-bar-fill" style="width: 0%"></div>
+                    </div>
+                `;
+                barsList.appendChild(item);
+
+                // Trigger width transition after layout render
+                setTimeout(() => {
+                    item.querySelector('.chart-bar-fill').style.width = `${percentage}%`;
+                }, 100);
+            });
+        }
+
+        // Copy Text Helper
+        function copyText(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector(`#${elementId} + .copy-btn`);
+                const originalIcon = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-check" style="color: #10b981;"></i>';
+                setTimeout(() => {
+                    btn.innerHTML = originalIcon;
+                }, 1500);
+            }).catch(err => {
+                console.error("Clipboard copy failed:", err);
+            });
+        }
+    </script>
+</body>
+</html>
