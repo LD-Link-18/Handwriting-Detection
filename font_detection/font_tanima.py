@@ -11,7 +11,7 @@ import numpy as np
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
 from tqdm import tqdm
-
+import shutil
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -39,9 +39,9 @@ FONT_TO_WRITER = {
 
 YABANCI_YAZAR_FONT = "Caveat-VariableFont_wght"  # Bu tahmin edilirse özel mesaj verilecek
 
-IMG_SIZE = 224
-FONT_SIZE = 36          # Variable fontlar için güvenli boyut
-BATCH_SIZE = 8          # Küçük veri setinde büyük batch overfitting yapar
+IMG_SIZE = 400
+FONT_SIZE = 72          # Variable fontlar için güvenli boyut
+BATCH_SIZE = 4         # Küçük veri setinde büyük batch overfitting yapar
 EPOCHS = 30
 LR = 1e-3
 WEIGHT_DECAY = 1e-4     # L2 regularizasyon (overfitting önler)
@@ -50,6 +50,40 @@ SEED = 42
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Cihaz: {DEVICE}")
+
+def render_word_image(word, font_path, font_size=FONT_SIZE, max_size=400):
+    """Tek kelimeyi render et, otomatik ölçeklendir."""
+    try:
+        font = ImageFont.truetype(str(font_path), size=font_size)
+    except Exception as e:
+        print(f"[UYARI] Font yüklenemedi: {font_path} -> {e}")
+        return None
+
+    # Kelime boyutunu ölç
+    dummy = Image.new("RGB", (10, 10), color="white")
+    draw = ImageDraw.Draw(dummy)
+    bbox = draw.textbbox((0, 0), word, font=font)
+    text_w = bbox[2] - bbox[0]
+    text_h = bbox[3] - bbox[1]
+
+    # Eğer kelime canvas'dan büyükse, font boyutunu küçült
+    if text_w > max_size - 40 or text_h > max_size - 40:
+        scale = min((max_size - 40) / text_w, (max_size - 40) / text_h)
+        new_size = int(font_size * scale)
+        font = ImageFont.truetype(str(font_path), size=new_size)
+        # Tekrar ölç
+        bbox = draw.textbbox((0, 0), word, font=font)
+        text_w = bbox[2] - bbox[0]
+        text_h = bbox[3] - bbox[1]
+
+    # Canvas oluştur ve ortala
+    img = Image.new("RGB", (max_size, max_size), color="white")
+    draw = ImageDraw.Draw(img)
+    x = (max_size - text_w) // 2
+    y = (max_size - text_h) // 2
+    draw.text((x, y - bbox[1]), word, font=font, fill="black")
+
+    return img
 
 # Seed sabitle (tekrarlanabilirlik)
 random.seed(SEED)
@@ -60,58 +94,15 @@ if torch.cuda.is_available():
 
 # ============================ 1. DATASET OLUŞTURMA ============================
 
-def split_sentences(text):
-    """Metni anlamlı cümlelere ayır."""
-    sentences = re.split(r'[.!?]+', text)
-    cleaned = []
-    for s in sentences:
-        s = s.strip().replace('\n', ' ')
-        s = re.sub(r'\s+', ' ', s)
-        if len(s) >= 15:  # Çok kısa cümleleri at
-            cleaned.append(s)
-    return cleaned
 
-
-def render_text_image(text, font_path, size=FONT_SIZE, output_size=IMG_SIZE):
-    """Metni verilen fontla beyaz zemin üzerine render et ve kare yap."""
-    try:
-        font = ImageFont.truetype(str(font_path), size=size)
-    except Exception as e:
-        print(f"[UYARI] Font yüklenemedi: {font_path} -> {e}")
-        return None
-
-    # Metin boyutunu ölç
-    dummy = Image.new("RGB", (10, 10), color="white")
-    draw = ImageDraw.Draw(dummy)
-    bbox = draw.textbbox((0, 0), text, font=font)
-    if bbox is None:
-        return None
-    text_w = bbox[2] - bbox[0]
-    text_h = bbox[3] - bbox[1]
-
-    if text_w <= 0 or text_h <= 0:
-        return None
-
-    # Paddingli canvas
-    pad = 24
-    canvas_w = min(text_w + pad * 2, output_size * 4)
-    canvas_h = min(text_h + pad * 2, output_size * 4)
-
-    img = Image.new("RGB", (canvas_w, canvas_h), color="white")
-    draw = ImageDraw.Draw(img)
-    draw.text((pad, pad - bbox[1]), text, font=font, fill="black")
-
-    # Aspect ratio koruyarak resize et
-    img.thumbnail((output_size, output_size), Image.Resampling.LANCZOS)
-
-    # Kare canvas ortala
-    final = Image.new("RGB", (output_size, output_size), color="white")
-    x = (output_size - img.width) // 2
-    y = (output_size - img.height) // 2
-    final.paste(img, (x, y))
-
-    return final
-
+def split_words(text):
+    """Metni kelimelere ayır, noktalama işaretlerini at."""
+    words = re.findall(r'\b[a-zA-Z]+\b', text)
+    # Tekrar eden kelimeleri çıkar, unique kelimeleri al
+    unique_words = list(dict.fromkeys(words))
+    # En az 3 harfli kelimeleri filtrele (a, I, vs. gibi kısa kelimeleri at)
+    filtered = [w for w in unique_words if len(w) >= 3]
+    return filtered
 
 def augment_image(img):
     """Overfitting önleyici augmentasyonlar."""
@@ -156,9 +147,11 @@ def augment_image(img):
 
     return img
 
-
 def create_dataset():
-    """TXT'den cümleleri oku, her fontla render et."""
+
+    if os.path.exists(DATASET_DIR):
+        shutil.rmtree(DATASET_DIR)
+    """TXT'den kelimeleri oku, her fontla render et."""
     os.makedirs(DATASET_DIR, exist_ok=True)
 
     font_files = sorted([f for f in os.listdir(FONT_DIR) if f.lower().endswith(".ttf")])
@@ -171,8 +164,8 @@ def create_dataset():
 
     with open(TXT_PATH, "r", encoding="utf-8") as f:
         text = f.read()
-    sentences = split_sentences(text)
-    print(f"\nToplam cümle: {len(sentences)}")
+    words = split_words(text)
+    print(f"\nToplam kelime: {len(words)}")
 
     total_images = 0
     for font_name in font_files:
@@ -182,15 +175,14 @@ def create_dataset():
         os.makedirs(label_dir, exist_ok=True)
 
         count = 0
-        for i, sentence in enumerate(sentences):
-            # Her cümleden 3 varyant: orijinal + 2 augmentasyonlu
+        for i, word in enumerate(words):
             for aug_idx in range(3):
-                img = render_text_image(sentence, font_path)
+                img = render_word_image(word, font_path)
                 if img is None:
                     continue
                 if aug_idx > 0:
                     img = augment_image(img)
-                save_name = f"{i:03d}_{aug_idx}.png"
+                save_name = f"{i:04d}_{aug_idx}.png"
                 img.save(os.path.join(label_dir, save_name))
                 count += 1
         print(f"  [{label}] -> {count} görüntü")
@@ -199,10 +191,10 @@ def create_dataset():
     print(f"\nToplam dataset: {total_images} görüntü")
     return font_files
 
-
 # ============================ 2. PYTORCH DATASET ============================
 
 train_transform = transforms.Compose([
+    transforms.Resize((224, 224)),
     transforms.RandomRotation(degrees=3, fill=255),
     transforms.RandomAffine(degrees=0, translate=(0.02, 0.02), fill=255),
     transforms.ColorJitter(brightness=0.2, contrast=0.2),
@@ -211,6 +203,7 @@ train_transform = transforms.Compose([
 ])
 
 val_transform = transforms.Compose([
+    transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
@@ -265,6 +258,8 @@ def get_model(num_classes):
 
 # ============================ 4. EĞİTİM ============================
 def train_model(model, train_loader, val_loader, epochs=EPOCHS):
+    print(f"MODEL CİHAZI: {next(model.parameters()).device}")
+    print(f"İLK BATCH CİHAZI: {next(iter(train_loader))[0].device}")
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.AdamW(model.fc.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
