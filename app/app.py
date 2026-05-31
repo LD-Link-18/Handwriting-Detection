@@ -93,16 +93,13 @@ class CRNN(nn.Module):
         return self.fc(x)
 
 
-def get_resnet50_model(num_classes):
-    # Load ResNet-50 without pre-trained weights since we load state_dict directly
-    model = models.resnet50(pretrained=False)
+def get_resnet18_model(num_classes):
+    # Load ResNet-18 without pre-trained weights since we load state_dict directly
+    model = models.resnet18(pretrained=False)
     in_features = model.fc.in_features
     model.fc = nn.Sequential(
         nn.Dropout(0.5),
-        nn.Linear(in_features, 256),
-        nn.ReLU(),
-        nn.Dropout(0.3),
-        nn.Linear(256, num_classes)
+        nn.Linear(in_features, num_classes)
     )
     return model
 
@@ -126,7 +123,7 @@ except Exception as e:
     htr_words_model = None
 
 try:
-    font_model = get_resnet50_model(len(FONT_CLASSES)).to(device)
+    font_model = get_resnet18_model(len(FONT_CLASSES)).to(device)
     font_model.load_state_dict(torch.load(FONT_MODEL_PATH, map_location=device))
     font_model.eval()
     print("[SUCCESS] Loaded Font Recognition Model successfully.")

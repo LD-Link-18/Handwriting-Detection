@@ -233,24 +233,21 @@ class FontImageDataset(Dataset):
         return image, label
 
 
-# ============================ 3. MODEL (ResNet-50) ============================
+# ============================ 3. MODEL (ResNet-18) ============================
 
 def get_model(num_classes):
-    """Pretrained ResNet-50; gövde dondurulmuş, sadece classifier eğitilir."""
-    model = models.resnet50(pretrained=True)
+    """Pretrained ResNet-18; gövde dondurulmuş, sadece classifier eğitilir."""
+    model = models.resnet18(pretrained=True)
 
     # Tüm gövdeyi dondur (overfitting'i önler)
     for param in model.parameters():
         param.requires_grad = False
 
-    # Son FC katmanını değiştir (daha derin dropout'lu)
+    # Son FC katmanını değiştir (dropout'lu)
     in_features = model.fc.in_features
     model.fc = nn.Sequential(
         nn.Dropout(0.5),
-        nn.Linear(in_features, 256),
-        nn.ReLU(),
-        nn.Dropout(0.3),
-        nn.Linear(256, num_classes)
+        nn.Linear(in_features, num_classes)
     )
 
     return model.to(DEVICE)
@@ -532,7 +529,7 @@ if __name__ == "__main__":
 
     # 3) Model oluştur
     print("\n" + "=" * 60)
-    print("ADIM 3: ResNet-50 modeli oluşturuluyor...")
+    print("ADIM 3: ResNet-18 modeli oluşturuluyor...")
     print("=" * 60)
     model = get_model(num_classes)
     print(f"Sınıf sayısı: {num_classes}")
