@@ -728,26 +728,52 @@
             outline: 2px solid var(--primary) !important;
             outline-color: var(--primary) !important;
         }
+
         .cropper-line {
             background-color: var(--primary) !important;
         }
+
         .cropper-point {
             background-color: var(--secondary) !important;
             border-radius: 50% !important;
             width: 8px !important;
             height: 8px !important;
         }
+
         .cropper-point.point-se {
             width: 12px !important;
             height: 12px !important;
             opacity: 1 !important;
         }
+
         .cropper-modal {
             background-color: rgba(9, 13, 22, 0.8) !important;
         }
+
         .cropper-bg {
             background-image: none !important;
             background-color: rgba(0, 0, 0, 0.3) !important;
+        }
+
+        /* Toggle Switch styling */
+        .switch input:checked+.slider {
+            background-color: var(--primary) !important;
+        }
+
+        .switch .slider::before {
+            content: "";
+            position: absolute;
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        .switch input:checked+.slider::before {
+            transform: translateX(22px);
         }
     </style>
 </head>
@@ -856,8 +882,39 @@
                     <div class="preview-container">
                         <img id="preview-img" src="" alt="Preview">
                     </div>
+
+                    <!-- Clean Background (Binarize) Controls -->
+                    <div
+                        style="width: 100%; display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; padding: 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-glass); border-radius: 12px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <span
+                                style="font-size: 13px; font-weight: 700; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-circle-half-stroke" style="color: var(--primary);"></i> Clean
+                                Background (B&amp;W)
+                            </span>
+                            <label class="switch"
+                                style="position: relative; display: inline-block; width: 44px; height: 22px;">
+                                <input type="checkbox" id="binarize-toggle" onchange="toggleBinarize()"
+                                    style="opacity: 0; width: 0; height: 0;">
+                                <span class="slider round"
+                                    style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-glass); transition: .3s; border-radius: 34px;"></span>
+                            </label>
+                        </div>
+                        <div id="threshold-container"
+                            style="display: none; align-items: center; gap: 12px; margin-top: 4px;">
+                            <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; width: 60px;">Ink
+                                Weight:</span>
+                            <input type="range" id="binarize-threshold" min="30" max="220" value="128"
+                                oninput="applyBinarizeFilter()"
+                                style="flex: 1; accent-color: var(--primary); cursor: pointer; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.1); outline: none;">
+                            <span id="threshold-value"
+                                style="font-size: 11px; color: var(--text-main); font-weight: 700; width: 24px; text-align: right;">128</span>
+                        </div>
+                    </div>
+
                     <div style="display: flex; gap: 12px; width: 100%;">
-                        <button class="btn btn-primary" id="analyze-btn" onclick="submitAnalysis()" disabled style="flex: 2;">
+                        <button class="btn btn-primary" id="analyze-btn" onclick="submitAnalysis()" disabled
+                            style="flex: 2;">
                             <i class="fa-solid fa-bolt"></i> Run Intelligence
                         </button>
                         <button class="btn btn-danger" id="clear-btn" onclick="clearPreview()" style="flex: 1;">
@@ -949,7 +1006,6 @@
                             <i class="fa-solid fa-triangle-exclamation"></i>
                             <div>
                                 <h4>Unregistered Writer Detected</h4>
-                                <p id="warning-msg">Bu yazar bizim yazarlarımızdan değil (Unknown Writer)</p>
                             </div>
                         </div>
 
@@ -984,6 +1040,7 @@
         let selectedFile = null;
         let videoStream = null;
         let cropper = null;
+        let originalImageURL = null; // Store the original loaded image DataURL
 
         // Drag and Drop implementation
         const dropZone = document.getElementById('drop-zone');
@@ -1028,14 +1085,22 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function (e) {
+                    originalImageURL = e.target.result;
+
+                    // Reset binarization UI controls
+                    document.getElementById('binarize-toggle').checked = false;
+                    document.getElementById('threshold-container').style.display = 'none';
+                    document.getElementById('binarize-threshold').value = 128;
+                    document.getElementById('threshold-value').textContent = 128;
+
                     const img = document.getElementById('preview-img');
-                    
+
                     if (cropper) {
                         cropper.destroy();
                         cropper = null;
                     }
-                    
-                    img.onload = function() {
+
+                    img.onload = function () {
                         if (cropper) return;
                         cropper = new Cropper(img, {
                             viewMode: 1,
@@ -1065,13 +1130,20 @@
                 cropper.destroy();
                 cropper = null;
             }
+            originalImageURL = null;
             selectedFile = null;
             document.getElementById('file-input').value = '';
             document.getElementById('preview-img').src = '';
             document.getElementById('preview-box').style.display = 'none';
             document.getElementById('analyze-btn').disabled = true;
             clearActivePreset();
-            
+
+            // Reset binarization UI controls
+            document.getElementById('binarize-toggle').checked = false;
+            document.getElementById('threshold-container').style.display = 'none';
+            document.getElementById('binarize-threshold').value = 128;
+            document.getElementById('threshold-value').textContent = 128;
+
             // Reset results display
             document.getElementById('results-card').style.display = 'none';
             document.getElementById('results-empty').style.display = 'block';
@@ -1081,6 +1153,83 @@
             document.querySelectorAll('.gallery-item').forEach(item => {
                 item.classList.remove('active');
             });
+        }
+
+        // Binarization preprocessing logic
+        function toggleBinarize() {
+            const toggle = document.getElementById('binarize-toggle');
+            const thresholdContainer = document.getElementById('threshold-container');
+
+            if (toggle.checked) {
+                thresholdContainer.style.display = 'flex';
+                applyBinarizeFilter();
+            } else {
+                thresholdContainer.style.display = 'none';
+                if (cropper && originalImageURL) {
+                    cropper.replace(originalImageURL);
+                }
+            }
+        }
+
+        function applyBinarizeFilter() {
+            if (!cropper || !originalImageURL) return;
+
+            const thresholdSlider = document.getElementById('binarize-threshold');
+            const thresholdVal = document.getElementById('threshold-value');
+            const threshold = parseInt(thresholdSlider.value);
+            thresholdVal.textContent = threshold;
+
+            const tempImg = new Image();
+            tempImg.onload = function () {
+                const canvas = document.createElement('canvas');
+                canvas.width = tempImg.width;
+                canvas.height = tempImg.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(tempImg, 0, 0);
+
+                const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imgData.data;
+
+                let whiteCount = 0;
+                let blackCount = 0;
+                const binarizedValues = new Uint8Array(data.length / 4);
+
+                // First pass: Grayscale and threshold each pixel, count whites and blacks
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+
+                    const v = (0.299 * r + 0.587 * g + 0.114 * b);
+                    const binarized = v > threshold ? 255 : 0;
+
+                    binarizedValues[i / 4] = binarized;
+                    if (binarized === 255) {
+                        whiteCount++;
+                    } else {
+                        blackCount++;
+                    }
+                }
+
+                // If most of the image is black (e.g. black background, white text), invert it
+                const shouldInvert = blackCount > whiteCount;
+
+                // Second pass: Write values back, inverting if needed
+                for (let i = 0; i < data.length; i += 4) {
+                    let val = binarizedValues[i / 4];
+                    if (shouldInvert) {
+                        val = val === 255 ? 0 : 255;
+                    }
+                    data[i] = val;
+                    data[i + 1] = val;
+                    data[i + 2] = val;
+                }
+
+                ctx.putImageData(imgData, 0, 0);
+                const binarizedURL = canvas.toDataURL('image/png');
+                cropper.replace(binarizedURL);
+            };
+            tempImg.src = originalImageURL;
         }
 
         // Preset Selections

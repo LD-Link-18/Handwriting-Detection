@@ -361,7 +361,7 @@ async def predict_font(file: UploadFile = File(...)):
         
         # Foreign writer condition
         if predicted_font == "Caveat-VariableFont_wght":
-            message = "Bu yazar bizim yazarlarımızdan değil (Unknown Writer)"
+            message = "Unknown Writer"
         else:
             message = f"Detected: {writer_display}"
             
@@ -433,7 +433,7 @@ async def predict_all(file: UploadFile = File(...), text_type: str = Form("line"
             writer_display = WRITER_DISPLAY_NAME.get(writer, writer)
             
             if predicted_font == "Caveat-VariableFont_wght":
-                message = "Bu yazar bizim yazarlarımızdan değil (Unknown Writer)"
+                message = "Unknown Writer"
             else:
                 message = f"Detected: {writer_display}"
                 

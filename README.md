@@ -112,7 +112,7 @@ Once the server successfully loads the deep learning models and reports `[SYSTEM
     "success": true,
     "predicted_font": "Caveat-VariableFont_wght",
     "writer_display": "Foreign Writer (Unknown)",
-    "message": "Bu yazar bizim yazarlarımızdan değil (Unknown Writer)",
+    "message": "Unknown Writer",
     "confidence": 0.9999,
     "scores": [
       { "font": "Caveat-VariableFont_wght", "writer_display": "Foreign Writer", "probability": 0.9999 },
