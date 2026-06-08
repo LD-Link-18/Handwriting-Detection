@@ -308,6 +308,20 @@
             color: white;
         }
 
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #f87171;
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: #ef4444;
+            color: #fca5a5;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.2);
+        }
+
         /* Camera View Finder */
         .camera-box {
             position: relative;
@@ -790,9 +804,14 @@
                         <i class="fa-solid fa-image"></i> Image Preview
                     </div>
                     <img class="preview-image" id="preview-img" src="" alt="Preview">
-                    <button class="btn btn-primary" id="analyze-btn" onclick="submitAnalysis()" disabled>
-                        <i class="fa-solid fa-bolt"></i> Run Intelligence
-                    </button>
+                    <div style="display: flex; gap: 12px; width: 100%;">
+                        <button class="btn btn-primary" id="analyze-btn" onclick="submitAnalysis()" disabled style="flex: 2;">
+                            <i class="fa-solid fa-bolt"></i> Run Intelligence
+                        </button>
+                        <button class="btn btn-danger" id="clear-btn" onclick="clearPreview()" style="flex: 1;">
+                            <i class="fa-solid fa-trash-can"></i> Remove
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Example Gallery -->
@@ -962,6 +981,19 @@
                 }
                 reader.readAsDataURL(file);
             }
+        }
+
+        function clearPreview() {
+            selectedFile = null;
+            document.getElementById('file-input').value = '';
+            document.getElementById('preview-img').src = '';
+            document.getElementById('preview-box').style.display = 'none';
+            document.getElementById('analyze-btn').disabled = true;
+            clearActivePreset();
+            
+            // Reset results display
+            document.getElementById('results-card').style.display = 'none';
+            document.getElementById('results-empty').style.display = 'block';
         }
 
         function clearActivePreset() {
