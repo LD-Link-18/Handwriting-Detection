@@ -1,25 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Handwriting & Font Recognizer</title>
+    <link rel="icon" href="static/signature.svg" type="image/x-icon">
+    <title>ScribleMind</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <style>
         :root {
             --bg-dark: #090d16;
             --bg-glass: rgba(17, 24, 39, 0.7);
             --border-glass: rgba(255, 255, 255, 0.08);
-            --primary: #6366f1; /* Indigo */
+            --primary: #6366f1;
+            /* Indigo */
             --primary-glow: rgba(99, 102, 241, 0.15);
-            --secondary: #a855f7; /* Purple */
-            --accent: #06b6d4; /* Cyan */
+            --secondary: #a855f7;
+            /* Purple */
+            --accent: #06b6d4;
+            /* Cyan */
             --text-main: #f3f4f6;
             --text-muted: #9ca3af;
             --card-radius: 20px;
@@ -212,7 +219,8 @@
             position: relative;
         }
 
-        .upload-zone:hover, .upload-zone.dragover {
+        .upload-zone:hover,
+        .upload-zone.dragover {
             border-color: var(--primary);
             background: var(--primary-glow);
             box-shadow: 0 0 20px rgba(99, 102, 241, 0.1) inset;
@@ -403,7 +411,8 @@
             width: 100%;
         }
 
-        .gallery-item:hover, .gallery-item.active {
+        .gallery-item:hover,
+        .gallery-item.active {
             border-color: var(--primary);
             background: var(--primary-glow);
         }
@@ -657,7 +666,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         footer {
@@ -676,6 +687,7 @@
         }
     </style>
 </head>
+
 <body>
 
     <header>
@@ -683,7 +695,8 @@
             <i class="fa-solid fa-signature"></i>
             <span>ScribbleMind</span>
         </div>
-        <div class="logo-subtitle" style="font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase;">
+        <div class="logo-subtitle"
+            style="font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase;">
             Kocaeli University AI
         </div>
     </header>
@@ -691,7 +704,8 @@
     <div class="container">
         <div class="hero">
             <h1>OCR & Font Identification</h1>
-            <p>Upload a line of handwritten text to digitize the letters and recognize the writer's font style in real-time.</p>
+            <p>Upload a line of handwritten text to digitize the letters and recognize the writer's font style in
+                real-time.</p>
         </div>
 
         <!-- Mode Selector -->
@@ -708,10 +722,13 @@
         </div>
 
         <!-- Error Banner -->
-        <div id="error-banner" style="display:none; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 16px 20px; color: #fca5a5; font-size: 14px; font-weight: 600; align-items: center; gap: 12px; box-shadow: 0 4px 20px rgba(239, 68, 68, 0.1);">
+        <div id="error-banner"
+            style="display:none; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 16px 20px; color: #fca5a5; font-size: 14px; font-weight: 600; align-items: center; gap: 12px; box-shadow: 0 4px 20px rgba(239, 68, 68, 0.1);">
             <i class="fa-solid fa-circle-exclamation" style="color: #ef4444; font-size: 18px;"></i>
             <span style="flex-grow: 1;" id="error-message">Error message goes here</span>
-            <button onclick="dismissError()" style="background: transparent; border: none; color: #fca5a5; cursor: pointer; font-size: 16px; padding: 0 4px;"><i class="fa-solid fa-xmark"></i></button>
+            <button onclick="dismissError()"
+                style="background: transparent; border: none; color: #fca5a5; cursor: pointer; font-size: 16px; padding: 0 4px;"><i
+                    class="fa-solid fa-xmark"></i></button>
         </div>
 
         <div class="workspace-grid">
@@ -726,13 +743,19 @@
                 </div>
 
                 <!-- Text OCR Mode Toggle -->
-                <div id="ocr-type-container" style="display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-glass); border-radius: 12px; padding: 10px 16px; margin-bottom: 20px;">
+                <div id="ocr-type-container"
+                    style="display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-glass); border-radius: 12px; padding: 10px 16px; margin-bottom: 20px;">
                     <span style="font-size: 13px; font-weight: 700; color: var(--text-muted);">
-                        <i class="fa-solid fa-arrows-left-right" style="margin-right: 6px; color: var(--primary);"></i> OCR Mode
+                        <i class="fa-solid fa-arrows-left-right" style="margin-right: 6px; color: var(--primary);"></i>
+                        OCR Mode
                     </span>
                     <div style="display: flex; gap: 8px;">
-                        <button class="btn btn-sm" id="btn-text-line" onclick="setTextType('line')" style="padding: 6px 12px; font-size: 11px; border-radius: 8px; font-weight: 700; background: var(--primary); color: white; border: none; cursor: pointer;">Sentence Line</button>
-                        <button class="btn btn-sm" id="btn-text-word" onclick="setTextType('word')" style="padding: 6px 12px; font-size: 11px; border-radius: 8px; font-weight: 700; background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); color: var(--text-muted); cursor: pointer;">Single Word</button>
+                        <button class="btn btn-sm" id="btn-text-line" onclick="setTextType('line')"
+                            style="padding: 6px 12px; font-size: 11px; border-radius: 8px; font-weight: 700; background: var(--primary); color: white; border: none; cursor: pointer;">Sentence
+                            Line</button>
+                        <button class="btn btn-sm" id="btn-text-word" onclick="setTextType('word')"
+                            style="padding: 6px 12px; font-size: 11px; border-radius: 8px; font-weight: 700; background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); color: var(--text-muted); cursor: pointer;">Single
+                            Word</button>
                     </div>
                 </div>
 
@@ -741,7 +764,8 @@
                     <i class="fa-solid fa-cloud-arrow-up"></i>
                     <h3>Drag & drop your image here</h3>
                     <p>Supports PNG, JPG, JPEG (Ideal: a single cropped line of text)</p>
-                    <input type="file" id="file-input" class="file-input" accept="image/*" onchange="handleFileSelect(event)">
+                    <input type="file" id="file-input" class="file-input" accept="image/*"
+                        onchange="handleFileSelect(event)">
                 </div>
 
                 <!-- Camera Container -->
@@ -810,14 +834,16 @@
 
                 <!-- Empty State -->
                 <div id="results-empty" style="text-align: center; color: var(--text-muted); padding: 40px 0;">
-                    <i class="fa-solid fa-circle-question" style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;"></i>
+                    <i class="fa-solid fa-circle-question"
+                        style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;"></i>
                     <p style="font-size: 15px; font-weight: 500;">No image analyzed yet</p>
-                    <p style="font-size: 13px; margin-top: 4px;">Upload or capture an image to see neural network results.</p>
+                    <p style="font-size: 13px; margin-top: 4px;">Upload or capture an image to see neural network
+                        results.</p>
                 </div>
 
                 <!-- Active Results Card -->
                 <div class="results-card" id="results-card">
-                    
+
                     <!-- OCR Segment -->
                     <div class="result-section" id="result-section-text" style="display:none;">
                         <div class="result-section-header">
@@ -846,7 +872,7 @@
                         <div class="result-section-header">
                             <i class="fa-solid fa-feather-pointed"></i> Font & Writer Style
                         </div>
-                        
+
                         <!-- Foreign Writer Warning -->
                         <div class="warning-card" id="writer-warning" style="display:none;">
                             <i class="fa-solid fa-triangle-exclamation"></i>
@@ -889,7 +915,7 @@
 
         // Drag and Drop implementation
         const dropZone = document.getElementById('drop-zone');
-        
+
         ['dragenter', 'dragover'].forEach(eventName => {
             dropZone.addEventListener(eventName, (e) => {
                 e.preventDefault();
@@ -929,7 +955,7 @@
             selectedFile = file;
             if (file) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = function (e) {
                     document.getElementById('preview-img').src = e.target.result;
                     document.getElementById('preview-box').style.display = 'flex';
                     document.getElementById('analyze-btn').disabled = false;
@@ -948,7 +974,7 @@
         function selectPreset(presetName, element) {
             clearActivePreset();
             element.classList.add('active');
-            
+
             // Stop camera if running
             stopCamera();
 
@@ -1011,15 +1037,15 @@
 
         function captureSnapshot() {
             const video = document.getElementById('video-stream');
-            
+
             // Create target canvas
             const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-            
+
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
+
             canvas.toBlob((blob) => {
                 const file = new File([blob], "camera_snapshot.jpg", { type: 'image/jpeg' });
                 setFile(file);
@@ -1033,12 +1059,12 @@
             selectedTextType = type;
             const btnLine = document.getElementById('btn-text-line');
             const btnWord = document.getElementById('btn-text-word');
-            
+
             if (type === 'line') {
                 btnLine.style.background = 'var(--primary)';
                 btnLine.style.color = 'white';
                 btnLine.style.border = 'none';
-                
+
                 btnWord.style.background = 'rgba(255,255,255,0.03)';
                 btnWord.style.color = 'var(--text-muted)';
                 btnWord.style.border = '1px solid var(--border-glass)';
@@ -1046,7 +1072,7 @@
                 btnWord.style.background = 'var(--primary)';
                 btnWord.style.color = 'white';
                 btnWord.style.border = 'none';
-                
+
                 btnLine.style.background = 'rgba(255,255,255,0.03)';
                 btnLine.style.color = 'var(--text-muted)';
                 btnLine.style.border = '1px solid var(--border-glass)';
@@ -1059,7 +1085,7 @@
             document.querySelectorAll('.mode-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            
+
             if (mode === 'all') document.getElementById('btn-mode-all').classList.add('active');
             if (mode === 'text') document.getElementById('btn-mode-text').classList.add('active');
             if (mode === 'font') document.getElementById('btn-mode-font').classList.add('active');
@@ -1095,7 +1121,7 @@
             const overlay = document.getElementById('loading-overlay');
             const resultsCard = document.getElementById('results-card');
             const emptyState = document.getElementById('results-empty');
-            
+
             const loaderTitle = document.getElementById('loader-title');
             const loaderSubtitle = document.getElementById('loader-subtitle');
 
@@ -1132,11 +1158,11 @@
                 }
 
                 const result = await response.json();
-                
+
                 // Hide empty state and show results
                 emptyState.style.display = 'none';
                 resultsCard.style.display = 'flex';
-                
+
                 // Reset outputs
                 document.getElementById('result-section-text').style.display = 'none';
                 document.getElementById('result-section-font').style.display = 'none';
@@ -1179,7 +1205,7 @@
             }
 
             section.style.display = 'block';
-            
+
             // Set Predicted Title details
             document.getElementById('predicted-writer').textContent = data.writer_display;
             document.getElementById('predicted-font-name').textContent = "Font style: " + data.predicted_font;
@@ -1200,7 +1226,7 @@
             data.scores.forEach((score, idx) => {
                 const isWinner = idx === 0;
                 const percentage = (score.probability * 100).toFixed(1);
-                
+
                 const item = document.createElement('div');
                 item.className = `chart-item ${isWinner ? 'winner' : ''}`;
                 item.innerHTML = `
@@ -1237,4 +1263,5 @@
         }
     </script>
 </body>
+
 </html>
