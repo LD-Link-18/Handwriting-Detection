@@ -14,6 +14,9 @@
         rel="stylesheet">
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Cropper.js -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
     <style>
         :root {
@@ -699,6 +702,53 @@
             color: var(--primary);
             text-decoration: none;
         }
+
+        /* Custom styles for image preview cropping */
+        .preview-container {
+            max-height: 350px;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-glass);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .preview-container img {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        /* CropperJS Custom Theme Overrides */
+        .cropper-view-box {
+            outline: 2px solid var(--primary) !important;
+            outline-color: var(--primary) !important;
+        }
+        .cropper-line {
+            background-color: var(--primary) !important;
+        }
+        .cropper-point {
+            background-color: var(--secondary) !important;
+            border-radius: 50% !important;
+            width: 8px !important;
+            height: 8px !important;
+        }
+        .cropper-point.point-se {
+            width: 12px !important;
+            height: 12px !important;
+            opacity: 1 !important;
+        }
+        .cropper-modal {
+            background-color: rgba(9, 13, 22, 0.8) !important;
+        }
+        .cropper-bg {
+            background-image: none !important;
+            background-color: rgba(0, 0, 0, 0.3) !important;
+        }
     </style>
 </head>
 
@@ -801,9 +851,11 @@
                 <!-- Image Preview Box -->
                 <div class="preview-box" id="preview-box">
                     <div class="gallery-title">
-                        <i class="fa-solid fa-image"></i> Image Preview
+                        <i class="fa-solid fa-image"></i> Crop Handwriting (Select text line)
                     </div>
-                    <img class="preview-image" id="preview-img" src="" alt="Preview">
+                    <div class="preview-container">
+                        <img id="preview-img" src="" alt="Preview">
+                    </div>
                     <div style="display: flex; gap: 12px; width: 100%;">
                         <button class="btn btn-primary" id="analyze-btn" onclick="submitAnalysis()" disabled style="flex: 2;">
                             <i class="fa-solid fa-bolt"></i> Run Intelligence
@@ -931,6 +983,7 @@
         let currentMode = 'all'; // 'all', 'text', 'font'
         let selectedFile = null;
         let videoStream = null;
+        let cropper = null;
 
         // Drag and Drop implementation
         const dropZone = document.getElementById('drop-zone');
@@ -975,7 +1028,31 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function (e) {
-                    document.getElementById('preview-img').src = e.target.result;
+                    const img = document.getElementById('preview-img');
+                    
+                    if (cropper) {
+                        cropper.destroy();
+                        cropper = null;
+                    }
+                    
+                    img.onload = function() {
+                        if (cropper) return;
+                        cropper = new Cropper(img, {
+                            viewMode: 1,
+                            dragMode: 'move',
+                            autoCropArea: 0.95,
+                            restore: false,
+                            guides: true,
+                            center: true,
+                            highlight: false,
+                            cropBoxMovable: true,
+                            cropBoxResizable: true,
+                            toggleDragModeOnDblclick: false,
+                            background: false
+                        });
+                    };
+
+                    img.src = e.target.result;
                     document.getElementById('preview-box').style.display = 'flex';
                     document.getElementById('analyze-btn').disabled = false;
                 }
@@ -984,6 +1061,10 @@
         }
 
         function clearPreview() {
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
             selectedFile = null;
             document.getElementById('file-input').value = '';
             document.getElementById('preview-img').src = '';
@@ -1035,6 +1116,7 @@
                 stopCamera();
             } else {
                 try {
+                    clearPreview();
                     videoStream = await navigator.mediaDevices.getUserMedia({
                         video: { facingMode: 'environment' }, // prefer rear camera on mobile
                         audio: false
@@ -1043,7 +1125,6 @@
                     cameraBox.style.display = 'block';
                     snapBtn.style.display = 'inline-flex';
                     toggleBtn.innerHTML = '<i class="fa-solid fa-video-slash"></i> Stop Camera';
-                    clearActivePreset();
                 } catch (err) {
                     console.error("Camera access error:", err);
                     alert("Unable to access camera. Please check permissions or drag and drop an image.");
@@ -1170,15 +1251,40 @@
             }
             overlay.style.display = 'flex';
 
-            const formData = new FormData();
-            formData.append('file', selectedFile);
-            formData.append('text_type', selectedTextType);
-
-            let endpoint = '/api/predict-all';
-            if (currentMode === 'text') endpoint = '/api/predict-text';
-            if (currentMode === 'font') endpoint = '/api/predict-font';
-
             try {
+                let fileToSend = selectedFile;
+
+                if (cropper) {
+                    const croppedCanvas = cropper.getCroppedCanvas();
+                    if (croppedCanvas) {
+                        const padding = 15; // px
+                        const paddedCanvas = document.createElement('canvas');
+                        paddedCanvas.width = croppedCanvas.width + padding * 2;
+                        paddedCanvas.height = croppedCanvas.height + padding * 2;
+
+                        const ctx = paddedCanvas.getContext('2d');
+                        ctx.fillStyle = '#ffffff'; // White padding background
+                        ctx.fillRect(0, 0, paddedCanvas.width, paddedCanvas.height);
+                        ctx.drawImage(croppedCanvas, padding, padding);
+
+                        const croppedBlob = await new Promise((resolve) => {
+                            paddedCanvas.toBlob((blob) => resolve(blob), 'image/png');
+                        });
+
+                        if (croppedBlob) {
+                            fileToSend = new File([croppedBlob], selectedFile.name || "cropped.png", { type: 'image/png' });
+                        }
+                    }
+                }
+
+                const formData = new FormData();
+                formData.append('file', fileToSend);
+                formData.append('text_type', selectedTextType);
+
+                let endpoint = '/api/predict-all';
+                if (currentMode === 'text') endpoint = '/api/predict-text';
+                if (currentMode === 'font') endpoint = '/api/predict-font';
+
                 const response = await fetch(endpoint, {
                     method: 'POST',
                     body: formData
